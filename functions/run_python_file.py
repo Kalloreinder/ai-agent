@@ -1,5 +1,6 @@
 import os
 import subprocess
+from google.genai import types
 
 def run_python_file(working_directory, file_path, args=[]):
     full_path = os.path.join(working_directory, file_path)
@@ -31,3 +32,18 @@ def run_python_file(working_directory, file_path, args=[]):
         return f'Error: executing Python file: {e}'
     
     return 0
+
+
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Runs a python script. File must be in the working directory",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The file must be a python script (.py), and must exist within the working directory.)"
+            )
+        }
+    )
+)
