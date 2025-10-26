@@ -51,7 +51,7 @@ def main():
         if response.function_calls:
             for function in response.function_calls:
                 try:
-                    if sys.args[2] == "--verbose":
+                    if sys.argv[2] == "--verbose":
                         function_call_result = call_function(function, True)
                         print(f"-> {function_call_result.parts[0].function_response.response}")
                     else:

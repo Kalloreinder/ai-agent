@@ -12,7 +12,8 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                "what files are in the root?"
+                "list directory contents",
+                "--verbose"
             ]
         }
     ]
