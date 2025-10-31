@@ -9,19 +9,15 @@ from functions.run_python_file import schema_run_python_file
 from functions.write_file import schema_write_file
 from functions.call_function import call_function
 
-
 def main():
     load_dotenv()
     api_key = os.environ.get("GEMINI_API_KEY")
-    available_functions = types.Tool(
-        function_declarations=[
-            schema_get_files_info,
-            schema_get_file_content,
-            schema_run_python_file,
-            schema_write_file,
-
-        ]
-    )
+    available_functions = [
+        types.Tool(function_declarations=[schema_get_files_info]),
+        types.Tool(function_declarations=[schema_get_file_content]),
+        types.Tool(function_declarations=[schema_run_python_file]),
+        types.Tool(function_declarations=[schema_write_file])
+    ]
     system_prompt = """
     You are a helpul AI coding agent.
     When a user asks a question or makes a request, make a function call plan. You can perform the following operations:
@@ -40,27 +36,42 @@ def main():
             types.Content(role="user", parts=[types.Part(text=user_prompt)])
             ]
         
-        response = client.models.generate_content(
-                model='gemini-2.0-flash-001', 
-                contents=messages,
-                config=types.GenerateContentConfig(
-                    tools=[available_functions],
-                    system_instruction=system_prompt)
+        for i in range(20):
+            response = client.models.generate_content(
+                    model='gemini-2.0-flash-001', 
+                    contents=messages,
+                    config=types.GenerateContentConfig(
+                        tools=available_functions,
+                        system_instruction=system_prompt)
             )
-        
-        if response.function_calls:
-            for function in response.function_calls:
-                try:
-                    if sys.argv[2] == "--verbose":
-                        function_call_result = call_function(function, True)
-                        print(f"-> {function_call_result.parts[0].function_response.response}")
-                    else:
-                        call_function(function)
-                except ValueError as e:
-                    print(f"Error: {e}")
-        else:
-            print(response.text)
-        
+
+            for candidate in response.candidates:
+                messages.append(candidate.content)
+
+            if response.function_calls:
+                for function in response.function_calls:
+                    print(f"- Calling function: {function.name}")
+                    try:
+                        verbose = len(sys.argv) > 2 and sys.argv[2] == '--verbose'
+                        if verbose:
+                            function_call_result = call_function(function, True)
+                            print(f"-> {function_call_result.parts[0].function_response.response}")
+                        else:
+                            function_call_result = call_function(function)
+                        messages.append(
+                            types.Content(
+                                role="user",
+                                parts=[types.Part(function_response=function_call_result.parts[0].function_response)]
+                                )
+                            )
+                    except ValueError as e:
+                        print(f"Error: {e}")
+            else:
+                if response.text:
+                    print("Final Response:")
+                    print(response.text)
+                    break
+
         print(f"User prompt: {user_prompt}")
         print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
         print(f"Response tokens: {response.usage_metadata.candidates_token_count}")

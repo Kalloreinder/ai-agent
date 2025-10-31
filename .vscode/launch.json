@@ -12,8 +12,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                "list directory contents",
-                "--verbose"
+                "how does the calculator render results to the console?",
             ]
         }
     ]
